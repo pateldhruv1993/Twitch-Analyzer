@@ -1,72 +1,45 @@
 
-var mongodb = require("mongodb"); //lets require/import the mongodb native drivers.
+var MongoClient = require('mongodb').MongoClient;
 
-//We need to work with "MongoClient" interface in order to connect to a mongodb server.
-var MongoClient = mongodb.MongoClient;
+var _db;
+var _chat_logs_coll;
+var _viewer_logs_coll;
+var _stream_logs_coll;
 
-// Connection URL. This is where your mongodb server is running.
-var dburl = "";
-var db;
-var collections = {};
-var isConnected = false;
-var dbMessages = ["DB_NOT_CONNECTED", "COLLECTION_NOT_FOUND", "COULD_NOT_INSERT"];
+module.exports = {
 
+  connectToServer: function (dbUrl, callback) {
+    MongoClient.connect(dbUrl, function (err, db) {
+      _db = db;
+      _chat_logs_coll = db.collection("chat_logs");
+      _stream_logs_coll = db.collection("stream_logs");
+      _viewer_logs_coll = db.collection("viewer_logs");
+      return callback(err);
+    });
+  },
 
-function DBManager(dbUrl) {
-  dburl = dbUrl;
-}
-
-
-// class methods
-DBManager.prototype.Connect = function(){
-  console.log(dburl);
-  MongoClient.connect(dburl, function(err, db) {
-    if(err){
-      console.log("\n\nError while connecting to database:");
-      console.log(err);
-      isConnected = false;
-      return dbMessages[0];
-    } else{
-      this.db = db;
-      isConnected = true;
-      return true;
+  insertData: function (data, collectionName) {
+    var collection;
+    if(collectionName == "chat_logs"){
+      collection = _chat_logs_coll;
+    } else if(collectionName == "stream_logs"){
+      collection = _stream_logs_coll;
+    } else if(collectionName == "viewer_logs"){
+      collection = _viewer_logs_coll;
     }
-  });
-};
 
-
-DBManager.prototype.AddCollection = function(collectionName){
-  if(isConnected){
-    db.collection(collectionName, {strict:true}, function(err, collection){
-      if(err){
-        console.log("\n\nError while adding collection:");
-        console.log(err);
-        return dbMessages[1];
-      } else{
-        collections[collectionName] = collection;
-        return true;
-      }
-    });
-  } else{
-    return dbMessages[0];
-  }
-};
-
-DBManager.prototype.InsertRows = function(collectionName, data){
-  if(isConnected){
-    collections[collectionName].insert(data, function(err, result) {
+    collection.insert(data, function (err, result) {
       if (err) {
-        console.log("\n\nError while inserting rows:");
-        console.log(err);
-        return dbMessages[2];
+        console.log("ERROR::" + err);
+        return false;
       } else {
+        console.log("Inserted the record\n" + result);
         return true;
       }
     });
-  } else{
-    return dbMessages[0];
-  }
-};
+  },
 
-// export the class
-module.exports = DBManager;
+  getDb: function () {
+    return _db;
+  },
+};
