@@ -1,24 +1,25 @@
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
 var tmi = require("tmi.js");
-var request = require("request");
-var mongodb = require("mongodb");
-
-
-
 var DBManager = require("./DatabaseManager");
+var express = require('express');
+var request = require("request");
+var app = express();
+var mongodb = require("mongodb"); //lets require/import the mongodb native drivers.
 
 
-var db;
+var MongoClient = mongodb.MongoClient;
+// Connection URL. This is where your mongodb server is running.
+var dburl = "mongodb://localhost:27017/local";
+
+
 var streamerList = ["esl_overwatch", "theonemanny", "lirik", "moonmoon_ow"]; //""theonemanny;
 var onlineStreamers = [];
+var channelsToConnectTo = [];
+
+
+
 var ircOptions = {
   options: {
-    debug: false
+    debug: true
   },
   connection: {
     reconnect: true
@@ -31,35 +32,30 @@ var ircOptions = {
 };
 
 
-var MongoClient = mongodb.MongoClient;
-// Connection URL. This is where your mongodb server is running.
-var dburl = "mongodb://localhost:27017/local";
 var ircClient = new tmi.client(ircOptions);
-
-
-var routes = require('./routes/index');
-var users = require('./routes/users');
-var api = require('./routes/api');
-
-var app = express();
+var db;
 
 
 DBManager.connectToServer(dburl, function (err) {
   if (!err) {
     db = DBManager.getDb();
 
+
     // Connect the client to the server..
     ircClient.connect();
     cron();
+
 
     ircClient.on("error", function (message) {
       console.log("ERROR:=====>" + message);
     });
 
+
     ircClient.on("chat", function (channel, userstate, message, self) {
       if (self) { // Don't listen to my own messages..
         return;
       }
+
       // Do your stuff.
       var unixTimeSec = Math.floor(new Date() / 1000);
       var ircLog = {
@@ -67,72 +63,35 @@ DBManager.connectToServer(dburl, function (err) {
         stream: channel.substring(1),
         username: userstate["display-name"]
       };
+
       DBManager.insertData(ircLog, "chat_logs");
     });
 
 
-
-
-
-
-
-    // view engine setup
-    app.set('views', path.join(__dirname, 'views'));
-    app.set('view engine', 'ejs');
-
-    // uncomment after placing your favicon in /public
-    //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-    app.use(logger('dev'));
-    app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: false }));
-    app.use(cookieParser());
-    app.use(express.static(path.join(__dirname, 'public')));
-
-    
-
-    app.use('/', routes);
-    app.use('/users', users);
-    app.use('/api', api);
-
-    // catch 404 and forward to error handler
-    app.use(function (req, res, next) {
-      var err = new Error('Not Found');
-      err.status = 404;
-      next(err);
-    });
-
-    // error handlers
-
-    // development error handler
-    // will print stacktrace
-    if (app.get('env') === 'development') {
-      app.use(function (err, req, res, next) {
-        res.status(err.status || 500);
-        res.render('error', {
-          message: err.message,
-          error: err
-        });
-      });
-    }
-
-    // production error handler
-    // no stacktraces leaked to user
-    app.use(function (err, req, res, next) {
-      res.status(err.status || 500);
-      res.render('error', {
-        message: err.message,
-        error: {}
-      });
-    });
-
-
-    /*// respond with "hello world" when a GET request is made to the homepage
+    // respond with "hello world" when a GET request is made to the homepage
     app.get('/', function (req, res) {
       res.send('hello world');
     });
-    */
+
+    app.listen(3033, function () {
+      console.log('Twitch-app-analyzer app listening on port 3003!')
+    })
   }
 });
+
+
+function checkUpOnStreams() {
+  var temp;
+  onlineStreamers.forEach(function (streamerName) {
+    temp.push("#" + streamerName);
+  }, this);
+  if (connectedStreams.sort().join(',') === temp.sort().join(',')) {
+
+  } else {
+
+  }
+}
+
 
 
 function cron() {
@@ -165,7 +124,9 @@ function cron() {
               stream: streamerName,
               viewerCount: viewerCount
             };
+            console.log("ViewerCounts.lenght" + viewerCounts.length);
             DBManager.insertData(viewerCounts, "viewer_logs");
+            console.log(viewerCount);
           } else {
             var index = onlineStreamers.indexOf(streamerName);
             if (index > -1) {
@@ -192,4 +153,30 @@ function cron() {
 }
 
 
-module.exports = app;
+function getOnlineStreamers() {
+  onlineStreamers = [];
+  streamerList.forEach(function (streamerName) {
+    var apiUrl = "https://api.twitch.tv/kraken/streams?channel=" + streamerName + "&client_id=dcjnqfita9g9qzn55h1y2wnoanbzi8f";
+    request({
+      url: apiUrl,
+      json: true
+    }, function (error, response, body) {
+      if (!error && response.statusCode === 200) {
+        try {
+          if (body.streams.length > 0) {
+            onlineStreamers.push(streamerName);
+            ircClient.join("#" + streamerName).then(function (data) {
+              console.log("Successful in joining the channel: #" + streamerName);
+            }).catch(function (err) {
+              console.log("ERROR:: Problem while joining the channel: #" + streamerName);
+            });
+          }
+        } catch (err) {
+
+        }
+      } else {
+        console.log("Something went wrong while trying to get the list of online streamers");
+      }
+    });
+  }, this);
+}
