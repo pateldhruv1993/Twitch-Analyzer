@@ -88,7 +88,7 @@ DBManager.connectToServer(dburl, function (err) {
     app.use(cookieParser());
     app.use(express.static(path.join(__dirname, 'public')));
 
-    
+
 
     app.use('/', routes);
     app.use('/users', users);
@@ -147,10 +147,10 @@ function cron() {
         try {
           if (body.streams.length > 0) {
             onlineStreamers.push(streamerName);
-
+            checkIfStreamInLogs(streamerName, Math.floor((new Date(body.streams[0]['created_at']) / 1000)), "start");
             var connectedToThese = ircClient.getChannels();
             console.log("All the channels I'm connected to:" + connectedToThese);
-            var index = connectedToThese.indexOf("#"+streamerName);
+            var index = connectedToThese.indexOf("#" + streamerName);
             if (index == -1) {
               ircClient.join("#" + streamerName).then(function (data) {
                 console.log("Successful in joining the channel: #" + streamerName);
@@ -189,6 +189,23 @@ function cron() {
   }, this);
 
   setTimeout(cron, 5000);
+}
+
+
+
+function checkIfStreamInLogs(streamName, unixTimeSec, status) {
+  streamName = streamName.toLowerCase();
+  db.collection("stream_logs").find({ 'stream': streamName, 'unixTimeSec': unixTimeSec, 'status': status }).count(function (error, numOfDocs) {
+    if (numOfDocs == 0) {
+      console.log(streamName + "'s STREAM WAS CREATED ON:" + unixTimeSec);
+      var streamLog = {
+        unixTimeSec: unixTimeSec,
+        stream: streamName,
+        status: status
+      };
+      DBManager.insertData(streamLog, "stream_logs");
+    }
+  });
 }
 
 

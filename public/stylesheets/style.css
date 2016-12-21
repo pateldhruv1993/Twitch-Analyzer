@@ -10,3 +10,8 @@ a {
 #content{
   margin-top: 25px;
 }
+
+
+#viewerGraph{
+  width: 50%;
+}
