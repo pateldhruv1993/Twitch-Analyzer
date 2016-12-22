@@ -33,7 +33,7 @@ module.exports = {
         console.log("ERROR::" + err);
         return false;
       } else {
-        console.log("Inserted the record\n" + result);
+        //console.log("Inserted the record\n" + result);
         return true;
       }
     });

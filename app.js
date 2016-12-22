@@ -1,4 +1,4 @@
-var express = require('express');
+  var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -176,7 +176,16 @@ function cron() {
                 console.log("ERROR:: Problem while parting from a channel: #" + streamerName);
               });
 
+              
+              
+              //TODO:: Add code to log stream stop status to the steram logs. Currently only stream starts are being logged
+              checkIfStreamInLogs(streamerName, Math.floor(new Date() / 1000), "stop");
+              
+              
+              
+              
               onlineStreamers.splice(index, 1);
+
             }
           }
         } catch (err) {

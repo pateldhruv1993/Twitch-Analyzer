@@ -13,5 +13,11 @@ a {
 
 
 #viewerGraph{
+  float:left;
+  width: 50%;
+}
+
+#chatGraph{
+  float:left;
   width: 50%;
 }
