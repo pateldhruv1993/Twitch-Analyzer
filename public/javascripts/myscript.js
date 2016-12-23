@@ -1,6 +1,9 @@
 var rawDataURL = 'https://raw.githubusercontent.com/plotly/datasets/master/2016-weather-data-seattle.csv';
 var xField = 'Time';
 var yField = 'Viwers';
+var latestLogTimeViewerGraph = 0;
+var latestLogTimeChatGraph = 0;
+
 
 var selectorOptions = {
     /*buttons: [{
@@ -28,18 +31,18 @@ var selectorOptions = {
     }],*/
 };
 
-
+var streamName = "theonemanny";
 $(document).ready(function () {
     $(window).resize(function () {
         //TODO: Doesnt work right now. Will have to come back later.
-        //Plotly.relayout('viewerGraph');
+        Plotly.relayout('viewerGraph');
     });
-    getPlotData({ stream: "moonmoon_ow" , func: "viewerGraph"}, createViewersGraph);
+    getPlotData({ stream:  streamName, func: "viewerGraph"}, createViewersGraph);
 
-    getPlotData({ stream: "moonmoon_ow", func: "chatGraph" }, createChartGraph);
+    //getPlotData({ stream: streamName, func: "chatGraph" }, createChartGraph);
 
     replotViewerGraphWithNewData();
-    reploatChatGraphWithNewData();
+    //reploatChatGraphWithNewData();
 
 });
 
@@ -52,17 +55,23 @@ function getPlotData(params, callback) {
 
 
 function reploatChatGraphWithNewData(){
-    getPlotData({ stream: "moonmoon_ow", func: "chatGraph" }, function(data){
-        viewerGraph.data[0].x = data.time;
-        viewerGraph.data[0].y = data.chatCounts;
-
+    getPlotData({ stream: streamName, func: "chatGraph", latestLogTime : latestLogTimeChatGraph }, function(data){
+        var plotData = [{
+            mode: 'lines',
+            x: data.time,
+            y: data.chatCounts,
+            name: "Chat Counts"
+        }];
+        chatGraph.data[0].x = data.time;
+        chatGraph.data[0].y = data.chatCounts;
+        latestLogTimeChatGraph = data.latestLogTime;
         Plotly.redraw(chatGraph);
     });
-    setTimeout(replotViewerGraphWithNewData, 3000);
+    setTimeout(reploatChatGraphWithNewData, 3000);
 }
 
 function replotViewerGraphWithNewData(){
-    getPlotData({ stream: "moonmoon_ow", func: "viewerGraph" }, function(data){
+    getPlotData({ stream: streamName, func: "viewerGraph", latestLogTime : latestLogTimeViewerGraph }, function(data){
         var plotData = [{
             mode: 'lines',
             x: data.time,
@@ -106,6 +115,8 @@ function replotViewerGraphWithNewData(){
         viewerGraph.data[3].x = data.movingAvgTime20;
         viewerGraph.data[3].y = data.movingAvgPoints20;
         
+        latestLogTimeViewerGraph = data.latestLogTime;
+
         Plotly.redraw(viewerGraph);
     });
     setTimeout(replotViewerGraphWithNewData, 3000);
@@ -144,7 +155,7 @@ function createChartGraph(data){
         }
 
         var layout = {
-            title: 'Chat Messages Counts',
+            title: 'Chat Messages Per 5 Sec',
             xaxis: {
                 showspikes: true,
                 rangeselector: selectorOptions,
@@ -154,7 +165,7 @@ function createChartGraph(data){
             yaxis: {
                 showspikes: true,
                 fixedrange: true
-            },
+            }
         };
 
         Plotly.plot(chatGraph, plotData, layout);

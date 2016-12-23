@@ -146,14 +146,19 @@ function cron() {
       if (!error && response.statusCode === 200) {
         try {
           if (body.streams.length > 0) {
-            onlineStreamers.push(streamerName);
-            checkIfStreamInLogs(streamerName, Math.floor((new Date(body.streams[0]['created_at']) / 1000)), "start");
             var connectedToThese = ircClient.getChannels();
-            console.log("All the channels I'm connected to:" + connectedToThese);
+            var temp = onlineStreamers.indexOf(streamerName);
+            if(temp == -1){
+              onlineStreamers.push(streamerName);
+              checkIfStreamInLogs(streamerName, Math.floor((new Date(body.streams[0]['created_at']) / 1000)), "start");
+            }
+            
+            
             var index = connectedToThese.indexOf("#" + streamerName);
             if (index == -1) {
               ircClient.join("#" + streamerName).then(function (data) {
                 console.log("Successful in joining the channel: #" + streamerName);
+                console.log("All the channels I'm connected to:" + connectedToThese);
               }).catch(function (err) {
                 console.log("ERROR:: Problem while joining the channel: #" + streamerName);
               });
@@ -170,7 +175,7 @@ function cron() {
             var index = onlineStreamers.indexOf(streamerName);
             if (index > -1) {
 
-              client.part("#" + onlineStreamers[index]).then(function (data) {
+              ircClient.part("#" + onlineStreamers[index]).then(function (data) {
                 console.log("Parteded from #" + streamerName);
               }).catch(function (err) {
                 console.log("ERROR:: Problem while parting from a channel: #" + streamerName);

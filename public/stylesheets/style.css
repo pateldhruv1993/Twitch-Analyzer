@@ -14,10 +14,10 @@ a {
 
 #viewerGraph{
   float:left;
-  width: 50%;
+  width: 100%;
 }
 
 #chatGraph{
   float:left;
-  width: 50%;
+  width: 100%;
 }
