@@ -13,9 +13,9 @@ router.get('/', function (req, res, next) {
     var startTime = req.query.start;
     var endTime = req.query.start;
     if (func == "viewerGraph") {
-        getViewersGraphData(stream, 2000000000, latestLogTime, res);
+        getViewersGraphData(stream, 200, latestLogTime, res);
     } else if (func == "chatGraph") {
-        getChatGraphData(stream, 10000, latestLogTime, res);
+        getChatGraphData(stream, 200, latestLogTime, res);
     }
 });
 
@@ -38,6 +38,9 @@ function getChatGraphData(stream, maxDocs, latestLogTime, res) {
             var chatCounter = 0;
             cursor.each(function cursorLoopCallback(err, item) {
                 if (item == null) {
+                    var skip = Math.max(data.time.length - maxDocs, 1);
+                    data.time = data.time.slice(skip);
+                    data.chatCounts = data.chatCounts.splice(skip);
                     res.json(data);
                     return;
                 }
@@ -116,18 +119,23 @@ function getViewersGraphData(stream, maxDocs, latestLogTime, res) {
                 var temp1 = data.time.slice();
                 var temp2 = data.time.slice();
                 var temp3 = data.time.slice();
+                var start, end;
                 console.log("NUMBER OF RECORDS SENT TO THE CLIENT:" + data.time.length);
                 data.movingAvgPoints = data.viewerCount.toVector().sma(movingAvgPeriod);
-                data.movingAvgTime = temp1.splice(0);
-                data.movingAvgTime.splice(0, (movingAvgPeriod - 1));
+                start = Math.round(movingAvgPeriod / 2);
+                data.movingAvgTime = temp1.splice(start, data.movingAvgPoints.length);
+                
+                //data.movingAvgTime.splice(0, (movingAvgPeriod - 1));
 
                 data.movingAvgPoints10 = data.viewerCount.toVector().sma(10);
-                data.movingAvgTime10 = temp2.splice(0);
-                data.movingAvgTime10.splice(0, (10 - 1));
+                start = Math.round(10 / 2);
+                data.movingAvgTime10 = temp2.splice(start, data.movingAvgPoints10.length);
+                //data.movingAvgTime10.splice(0, (10 - 1));
 
                 data.movingAvgPoints20 = data.viewerCount.toVector().sma(100);
-                data.movingAvgTime20 = temp3.splice(0);
-                data.movingAvgTime20.splice(0, (100 - 1));
+                start = Math.round(100 / 2);
+                data.movingAvgTime20 = temp3.splice(start, data.movingAvgPoints20.length);
+                //data.movingAvgTime20.splice(0, (100 - 1));
                 console.log("NUMBER OF RECORDS SENT TO THE CLIENT:" + data.time.length);
                 res.json(data);
                 return;
