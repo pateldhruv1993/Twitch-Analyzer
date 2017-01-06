@@ -31,12 +31,13 @@ var selectorOptions = {
     }],*/
 };
 
-var streamName = "theonemanny";
+var streamName = "moonmoon_ow";
 $(document).ready(function () {
     $(window).resize(function () {
         //TODO: Doesnt work right now. Will have to come back later.
         Plotly.relayout('viewerGraph');
     });
+    document.getElementById("streamName").innerText = streamName.toUpperCase();
     getPlotData({ stream: streamName, func: "viewerGraph", latestLogTime : 0  }, createViewersGraph);
 
     getPlotData({ stream: streamName, func: "chatGraph" }, createChartGraph);
@@ -82,7 +83,7 @@ function replotViewerGraphWithNewData() {
             y: data.movingAvgPoints,
             mode: 'lines',
             line: {
-                color: 'rgb(0, 255, 0)',
+                color: 'rgb(9,175,9)',
             },
             name: "Moving AVG 10"
         }, {

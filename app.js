@@ -207,6 +207,9 @@ function cron() {
 
 
 
+//NOTICE: Multiple "stop" status from a same channel without a "start" between them means stream dropped
+// keeping it this way so that we can choose to ignore the chat spam during that drop. Also twitch seems to
+// have the entire stream in one single VOD even though there were drops.
 function checkIfStreamInLogs(streamName, unixTimeSec, status) {
   streamName = streamName.toLowerCase();
   db.collection("stream_logs").find({ 'stream': streamName, 'unixTimeSec': unixTimeSec, 'status': status }).count(function (error, numOfDocs) {
