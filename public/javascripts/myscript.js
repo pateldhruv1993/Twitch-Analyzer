@@ -31,12 +31,17 @@ var selectorOptions = {
     }],*/
 };
 
-var streamName = "theonemanny";
+var streamName = "lirik";
 $(document).ready(function () {
+    $(".streamDropDown").click(function(event){
+        streamName = this.innerText.toLowerCase();
+        document.getElementById("streamName").innerText = streamName.toUpperCase();    
+    });
     $(window).resize(function () {
         //TODO: Doesnt work right now. Will have to come back later.
         Plotly.relayout('viewerGraph');
     });
+    document.getElementById("streamName").innerText = streamName.toUpperCase();
     getPlotData({ stream: streamName, func: "viewerGraph", latestLogTime : 0  }, createViewersGraph);
 
     getPlotData({ stream: streamName, func: "chatGraph" }, createChartGraph);
@@ -82,9 +87,9 @@ function replotViewerGraphWithNewData() {
             y: data.movingAvgPoints,
             mode: 'lines',
             line: {
-                color: 'rgb(0, 255, 0)',
+                color: 'rgb(9,175,9)',
             },
-            name: "Moving AVG 10"
+            name: "MAVG"
         }, {
             x: data.movingAvgTime10,
             y: data.movingAvgPoints10,
@@ -92,7 +97,7 @@ function replotViewerGraphWithNewData() {
             line: {
                 color: 'rgb(0, 0, 0)',
             },
-            name: "Moving AVG 20"
+            name: "MAVG 10"
         }, {
             x: data.movingAvgTime20,
             y: data.movingAvgPoints20,
@@ -100,7 +105,7 @@ function replotViewerGraphWithNewData() {
             line: {
                 color: 'rgb(255, 0, 0)',
             },
-            name: "Moving AVG"
+            name: "MAVG 100"
         }];
 
         viewerGraph.data[0].x = data.time;
@@ -182,7 +187,7 @@ function createViewersGraph(data) {
         line: {
             color: 'rgb(0, 255, 0)'
         },
-        name: "Moving AVG"
+        name: "MAVG"
     }, {
         x: data.movingAvgTime10,
         y: data.movingAvgPoints10,
@@ -190,7 +195,7 @@ function createViewersGraph(data) {
         line: {
             color: 'rgb(0, 0, 0)'
         },
-        name: "Moving AVG 10"
+        name: "MAVG 10"
     }, {
         x: data.movingAvgTime20,
         y: data.movingAvgPoints20,
@@ -198,7 +203,7 @@ function createViewersGraph(data) {
         line: {
             color: 'rgb(255, 0, 0)'
         },
-        name: "Moving AVG 100"
+        name: "MAVG 100"
     }];
 
     var xRangeOption2 = data.viewerCount.length;
