@@ -16,7 +16,7 @@ DBManager.connectToServer(dburl, function (err) {
 });
 
 function cron() {
-    var viewersData = { viewerCount: [], timestamp: [] };
+    var viewersData = { viewerCount: [], timestamp: [], chatCounts: []};
     getStartOfStream(stream, function getStartOfStreamCallback(startOfLastStream) {
         startOfLastStream = Number(startOfLastStream);
         var cursor = db.collection("viewer_logs").find({ 'stream': stream, "unixTimeSec": { $gt: startOfLastStream } }).sort({ unixTimeSec: 1 });
@@ -24,7 +24,33 @@ function cron() {
 
             if (item == null) { // each loop finished
                 scaleData(viewersData.viewerCount, function scaleDataCallback() {
-                    console.log(viewersData.viewerCount);
+                    //console.log(viewersData.viewerCount);
+                    var counter = 0;
+                    var cursor = db.collection("chat_logs").find({ "stream": stream, "unixTimeSec": { $gt: startOfLastStream } }).sort({ unixTimeSec: 1 });
+                    cursor.count(function(err, num){
+                        console.log("Total number of chat counts returned:" + num);
+                    });
+                    cursor.each(function(err, item){
+                        if(item == null){
+                            console.log(viewersData.chatCounts);
+                            console.log("chat[0]:"+viewersData.chatCounts[0]);
+                            scaleData(viewersData.chatCounts, function(){
+                                console.log(viewersData.chatCounts);
+                            });
+                            return;
+                        }
+                        
+                        if(viewersData.chatCounts[counter] == undefined){
+                                viewersData.chatCounts[counter] = 0;
+                        }
+                        if(item.unixTimeSec <= viewersData.timestamp[counter]){
+                            if(viewersData.chatCounts[counter] != undefined){
+                                viewersData.chatCounts[counter] = viewersData.chatCounts[counter] + 1;
+                            }
+                        } else{
+                            counter++;
+                        }
+                    });
                 });
                 return;
             }
