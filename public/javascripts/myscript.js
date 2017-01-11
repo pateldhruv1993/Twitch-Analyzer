@@ -31,7 +31,11 @@ var selectorOptions = {
     }],*/
 };
 
+<<<<<<< HEAD
 var streamName = "lirik";
+=======
+var streamName = "moonmoon_ow";
+>>>>>>> origin/master
 $(document).ready(function () {
     $(".streamDropDown").click(function(event){
         streamName = this.innerText.toLowerCase();
