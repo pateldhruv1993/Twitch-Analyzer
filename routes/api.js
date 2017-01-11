@@ -28,8 +28,8 @@ function getChatGraphData(stream, maxDocs, latestLogTime, res) {
     chatCondenseBlockSize = 5; //in seconds
     getStartOfStream(stream, function getStartOfStreamCallback(startOfLastStream) {
         startOfLastStream = Number(startOfLastStream);
-        var cursor = db.collection("chat_logs").find({ "stream": stream, "unixTimeSec": {$gt: startOfLastStream}});
-        cursor.count(function callbackAfterCount (error, numOfDocs) {
+        var cursor = db.collection("chat_logs").find({ "stream": stream, "unixTimeSec": { $gt: startOfLastStream } });
+        cursor.count(function callbackAfterCount(error, numOfDocs) {
             /*var numOfDocsToSkip = (numOfDocs + 1) - maxDocs;
             if (numOfDocs < maxDocs) {
                 numOfDocsToSkip = 0;
@@ -62,7 +62,7 @@ function getChatGraphData(stream, maxDocs, latestLogTime, res) {
                     chatCounter = 0;
                     var tempCounter = 0
                     while (true) {
-                        if(tempCounter > 100000){
+                        if (tempCounter > 100000) {
                             console.log("Awww shit");
                         }
                         startTime = startTime + chatCondenseBlockSize;
@@ -97,54 +97,57 @@ function getViewersGraphData(stream, maxDocs, latestLogTime, res) {
     var data = { viewerCount: [], time: [], movingAvgPoints: [], movingAvgTime: [], movingAvgPoints10: [], movingAvgTime10: [], movingAvgPoints20: [], movingAvgTime20: [] };
     var movingAvgPeriod = 5;
 
-    var cursor = db.collection("viewer_logs").find({ 'stream': stream, "unixTimeSec": {$gt: 1482418583} }).sort({ unixTimeSec: 1 });
-    cursor.count(function (error, numOfDocs) {
+    getStartOfStream(stream, function getStartOfStreamCallback(startOfLastStream) {
+        startOfLastStream = Number(startOfLastStream);
+        var cursor = db.collection("viewer_logs").find({ 'stream': stream, "unixTimeSec": { $gt: startOfLastStream } }).sort({ unixTimeSec: 1 });
+        cursor.count(function (error, numOfDocs) {
 
-        var numOfDocsToSkip = (numOfDocs + 1) - maxDocs;
-        if (numOfDocs < maxDocs) {
-            numOfDocsToSkip = 0;
-        }
-        var counter = 0;
-
-        cursor.each(function (err, item) {
-            counter++;
-            var record = {};
-            if (counter < numOfDocsToSkip) {
-                return;
+            var numOfDocsToSkip = (numOfDocs + 1) - maxDocs;
+            if (numOfDocs < maxDocs) {
+                numOfDocsToSkip = 0;
             }
+            var counter = 0;
 
-            if (item == null) {
-                // All the objects have been added and the last item in cursor is empty
-                // Putting this code after the .each() would cause that code to run first before this loop finishes
-                // coz of promies. So put code here or check out .then()
-                //var movingAvgPoints = data.viewerCount.toVector();
-                var temp1 = data.time.slice();
-                var temp2 = data.time.slice();
-                var temp3 = data.time.slice();
-                var start, end;
-                console.log("NUMBER OF RECORDS SENT TO THE CLIENT:" + data.time.length);
-                data.movingAvgPoints = data.viewerCount.toVector().sma(movingAvgPeriod);
-                start = Math.round(movingAvgPeriod / 2);
-                data.movingAvgTime = temp1.splice(start, data.movingAvgPoints.length);
-                
-                //data.movingAvgTime.splice(0, (movingAvgPeriod - 1));
+            cursor.each(function (err, item) {
+                counter++;
+                var record = {};
+                if (counter < numOfDocsToSkip) {
+                    return;
+                }
 
-                data.movingAvgPoints10 = data.viewerCount.toVector().sma(10);
-                start = Math.round(10 / 2);
-                data.movingAvgTime10 = temp2.splice(start, data.movingAvgPoints10.length);
-                //data.movingAvgTime10.splice(0, (10 - 1));
+                if (item == null) {
+                    // All the objects have been added and the last item in cursor is empty
+                    // Putting this code after the .each() would cause that code to run first before this loop finishes
+                    // coz of promies. So put code here or check out .then()
+                    //var movingAvgPoints = data.viewerCount.toVector();
+                    var temp1 = data.time.slice();
+                    var temp2 = data.time.slice();
+                    var temp3 = data.time.slice();
+                    var start, end;
+                    console.log("NUMBER OF RECORDS SENT TO THE CLIENT:" + data.time.length);
+                    data.movingAvgPoints = data.viewerCount.toVector().sma(movingAvgPeriod);
+                    start = Math.round(movingAvgPeriod / 2);
+                    data.movingAvgTime = temp1.splice(start, data.movingAvgPoints.length);
 
-                data.movingAvgPoints20 = data.viewerCount.toVector().sma(100);
-                start = Math.round(100 / 2);
-                data.movingAvgTime20 = temp3.splice(start, data.movingAvgPoints20.length);
-                //data.movingAvgTime20.splice(0, (100 - 1));
-                console.log("NUMBER OF RECORDS SENT TO THE CLIENT:" + data.time.length);
-                res.json(data);
-                return;
-            }
-            data.time.push(unixTimeSecToTime(item.unixTimeSec));
-            data.viewerCount.push(item.viewerCount);
-            data.latestLogTime = item.unixTimeSec;
+                    //data.movingAvgTime.splice(0, (movingAvgPeriod - 1));
+
+                    data.movingAvgPoints10 = data.viewerCount.toVector().sma(10);
+                    start = Math.round(10 / 2);
+                    data.movingAvgTime10 = temp2.splice(start, data.movingAvgPoints10.length);
+                    //data.movingAvgTime10.splice(0, (10 - 1));
+
+                    data.movingAvgPoints20 = data.viewerCount.toVector().sma(100);
+                    start = Math.round(100 / 2);
+                    data.movingAvgTime20 = temp3.splice(start, data.movingAvgPoints20.length);
+                    //data.movingAvgTime20.splice(0, (100 - 1));
+                    console.log("NUMBER OF RECORDS SENT TO THE CLIENT:" + data.time.length);
+                    res.json(data);
+                    return;
+                }
+                data.time.push(unixTimeSecToTime(item.unixTimeSec));
+                data.viewerCount.push(item.viewerCount);
+                data.latestLogTime = item.unixTimeSec;
+            });
         });
     });
 }
