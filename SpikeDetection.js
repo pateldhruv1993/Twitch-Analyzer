@@ -16,7 +16,7 @@ DBManager.connectToServer(dburl, function (err) {
 });
 
 function cron() {
-    var viewersData = { viewerCount: [], timestamp: [], chatCounts: []};
+    var viewersData = { viewerCount: [], timestamp: [], chatCounts: [], viewerAndChatCounts: [] };
     getStartOfStream(stream, function getStartOfStreamCallback(startOfLastStream) {
         startOfLastStream = Number(startOfLastStream);
         var cursor = db.collection("viewer_logs").find({ 'stream': stream, "unixTimeSec": { $gt: startOfLastStream } }).sort({ unixTimeSec: 1 });
@@ -27,29 +27,43 @@ function cron() {
                     //console.log(viewersData.viewerCount);
                     var counter = 0;
                     var cursor = db.collection("chat_logs").find({ "stream": stream, "unixTimeSec": { $gt: startOfLastStream } }).sort({ unixTimeSec: 1 });
-                    cursor.count(function(err, num){
+                    cursor.count(function (err, num) {
                         console.log("Total number of chat counts returned:" + num);
                     });
-                    cursor.each(function(err, item){
-                        if(item == null){
-                            console.log(viewersData.chatCounts);
-                            console.log("chat[0]:"+viewersData.chatCounts[0]);
-                            scaleData(viewersData.chatCounts, function(){
-                                console.log(viewersData.chatCounts);
+                    cursor.each(function (err, item) {
+                        if (item == null) {
+                            //console.log(viewersData.chatCounts);
+                            console.log("chat[0]:" + viewersData.chatCounts[0]);
+                            scaleData(viewersData.chatCounts, function () {
+                                //console.log(viewersData.chatCounts);
+
+                                if (viewersData.viewerCount != null && viewersData.chatCounts.length == viewersData.viewerCount.length) {
+                                    for (var i = 0; i < viewersData.viewerCount.length; i++) {
+                                        viewersData.viewerAndChatCounts.push(viewersData.chatCounts[i] + viewersData.viewerCount[i]);
+                                    }
+                                }
+                                console.log(viewersData.viewerAndChatCounts.length);
+                                console.log(viewersData.viewerAndChatCounts);
+                                slayer().fromArray(viewersData.viewerAndChatCounts).then(spikes => {
+                                    console.log(spikes);      // [ { x: 4, y: 12 }, { x: 12, y: 25 } ]
+                                });
+
+
                             });
                             return;
                         }
-                        
-                        if(viewersData.chatCounts[counter] == undefined){
-                                viewersData.chatCounts[counter] = 0;
+
+                        if (viewersData.chatCounts[counter] == undefined) {
+                            viewersData.chatCounts[counter] = 0;
                         }
-                        if(item.unixTimeSec <= viewersData.timestamp[counter]){
-                            if(viewersData.chatCounts[counter] != undefined){
+                        if (item.unixTimeSec <= viewersData.timestamp[counter]) {
+                            if (viewersData.chatCounts[counter] != undefined) {
                                 viewersData.chatCounts[counter] = viewersData.chatCounts[counter] + 1;
                             }
-                        } else{
+                        } else {
                             counter++;
                         }
+
                     });
                 });
                 return;
@@ -77,7 +91,7 @@ function scaleData(arr, callback) {
 
 
 function scaleBetween(unscaledNum, minAllowed, maxAllowed, min, max) {
-  return (maxAllowed - minAllowed) * (unscaledNum - min) / (max - min) + minAllowed;
+    return (maxAllowed - minAllowed) * (unscaledNum - min) / (max - min) + minAllowed;
 }
 
 
