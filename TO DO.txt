@@ -1,0 +1,2 @@
+- Add code to SpikeDetection to get the spikes. Also make it so that the cron runs every couple of seconds.
+    Also make sure to show "SPIKE" or something on console when a spike occurs within last 5 seconds.
