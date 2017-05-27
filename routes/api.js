@@ -63,7 +63,8 @@ function getChatGraphData(stream, maxDocs, latestLogTime, res) {
                     var tempCounter = 0
                     while (true) {
                         if (tempCounter > 100000) {
-                            console.log("Awww shit");
+                            console.log("Awww shit! May be an infinite loop in api.js");
+                            break;
                         }
                         startTime = startTime + chatCondenseBlockSize;
                         if (item.unixTimeSec < startTime) {
@@ -97,7 +98,7 @@ function getViewersGraphData(stream, maxDocs, latestLogTime, res) {
     var data = { viewerCount: [], time: [], movingAvgPoints: [], movingAvgTime: [], movingAvgPoints10: [], movingAvgTime10: [], movingAvgPoints20: [], movingAvgTime20: [] };
     var movingAvgPeriod = 5;
 
-    getStartOfStream(stream, function getStartOfStreamCallback(startOfLastStream) {
+    getStartOfStreamAndVodId(stream, function getStartOfStreamCallback(startOfLastStream, vodId) {
         startOfLastStream = Number(startOfLastStream);
         var cursor = db.collection("viewer_logs").find({ 'stream': stream, "unixTimeSec": { $gt: startOfLastStream } }).sort({ unixTimeSec: 1 });
         cursor.count(function (error, numOfDocs) {
@@ -170,16 +171,16 @@ function unixTimeSecToTime(unixTimeSec) {
 
 
 
-function getStartOfStream(stream, callback) {
+function getStartOfStreamAndVodId(stream, callback) {
 
     db.collection("stream_logs").find({ 'stream': stream, 'status': 'start' }).sort({ unixTimeSec: -1 }).each(function (err, item) {
-        var valueToReturn = 0
-        if (item == null) {
-            valueToReturn = 0;
-        } else {
-            valueToReturn = item.unixTimeSec
+        var startTime = 0;
+        var vodId = "";
+        if (item != null) {
+            startTime = item.unixTimeSec;
+            vodId = item.vod_id;
         }
-        callback(valueToReturn);
+        callback(valueToReturn, vodId);
         return false;
     });
 }

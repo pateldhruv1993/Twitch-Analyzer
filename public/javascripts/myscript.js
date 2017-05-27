@@ -1,4 +1,3 @@
-var rawDataURL = 'https://raw.githubusercontent.com/plotly/datasets/master/2016-weather-data-seattle.csv';
 var xField = 'Time';
 var yField = 'Viwers';
 var latestLogTimeViewerGraph = 0;
@@ -31,7 +30,7 @@ var selectorOptions = {
     }],*/
 };
 
-var streamName = "moonmoon_ow";
+var streamName = "curse";
 
 $(document).ready(function () {
     $(".streamDropDown").click(function(event){

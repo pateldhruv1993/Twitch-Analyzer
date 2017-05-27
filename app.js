@@ -1,4 +1,4 @@
-  var express = require('express');
+var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -14,7 +14,7 @@ var DBManager = require("./DatabaseManager");
 
 
 var db;
-var streamerList = ["esl_overwatch", "theonemanny", "lirik", "moonmoon_ow", "mendokusaii"]; //""theonemanny;
+var streamerList = ["esl_overwatch", "theonemanny", "lirik", "moonmoon_ow", "mendokusaii", "curse"]; //""theonemanny;
 var onlineStreamers = [];
 var ircOptions = {
   options: {
@@ -84,7 +84,9 @@ DBManager.connectToServer(dburl, function (err) {
     //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
     app.use(logger('dev'));
     app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: false }));
+    app.use(bodyParser.urlencoded({
+      extended: false
+    }));
     app.use(cookieParser());
     app.use(express.static(path.join(__dirname, 'public')));
 
@@ -148,12 +150,12 @@ function cron() {
           if (body.streams.length > 0) {
             var connectedToThese = ircClient.getChannels();
             var temp = onlineStreamers.indexOf(streamerName);
-            if(temp == -1){
+            if (temp == -1) {
               onlineStreamers.push(streamerName);
               checkIfStreamInLogs(streamerName, Math.floor((new Date(body.streams[0]['created_at']) / 1000)), "start");
             }
-            
-            
+
+
             var index = connectedToThese.indexOf("#" + streamerName);
             if (index == -1) {
               ircClient.join("#" + streamerName).then(function (data) {
@@ -163,6 +165,8 @@ function cron() {
                 console.log("ERROR:: Problem while joining the channel: #" + streamerName);
               });
             }
+
+
             var viewerCount = body.streams[0].viewers;
             var unixTimeSec = Math.floor(new Date() / 1000);
             var viewerCounts = {
@@ -181,14 +185,14 @@ function cron() {
                 console.log("ERROR:: Problem while parting from a channel: #" + streamerName);
               });
 
-              
-              
+
+
               //TODO:: Add code to log stream stop status to the steram logs. Currently only stream starts are being logged
               checkIfStreamInLogs(streamerName, Math.floor(new Date() / 1000), "stop");
-              
-              
-              
-              
+
+
+
+
               onlineStreamers.splice(index, 1);
 
             }
@@ -212,15 +216,45 @@ function cron() {
 // have the entire stream in one single VOD even though there were drops.
 function checkIfStreamInLogs(streamName, unixTimeSec, status) {
   streamName = streamName.toLowerCase();
-  db.collection("stream_logs").find({ 'stream': streamName, 'unixTimeSec': unixTimeSec, 'status': status }).count(function (error, numOfDocs) {
+  db.collection("stream_logs").find({
+    'stream': streamName,
+    'unixTimeSec': unixTimeSec,
+    'status': status
+  }).count(function (error, numOfDocs) {
     if (numOfDocs == 0) {
       console.log(streamName + "'s STREAM WAS CREATED ON:" + unixTimeSec);
+
       var streamLog = {
         unixTimeSec: unixTimeSec,
         stream: streamName,
         status: status
       };
-      DBManager.insertData(streamLog, "stream_logs");
+
+
+      // NOTE: Make sure this part of code adds VOD id to stream_logs everytime. Even if the stream just started
+      // IF IT DOESNT WORK: It might be becuase we made the api call to VODs list almost instantly after the streamer started streaming and so its not on the VOD list yet???
+      if (status == "start") {
+        var apiUrl = "https://api.twitch.tv/kraken/channels/" + streamName + "/videos?client_id=dcjnqfita9g9qzn55h1y2wnoanbzi8f&broadcasts=true";
+        request({
+          url: apiUrl,
+          json: true
+        }, function (error, response, body) {
+          body.videos.forEach(function(vod){
+            if(vod.status == "recording"){
+              if(vod._id[0] == "v"){
+                streamLog.vod_id = vod._id.substring(1);
+              } else{
+                streamLog.vod_id = vod._id;
+              }
+              DBManager.insertData(streamLog, "stream_logs");      
+            }
+          }, this);
+        });
+      } else {
+        DBManager.insertData(streamLog, "stream_logs");
+      }
+
+      
     }
   });
 }
