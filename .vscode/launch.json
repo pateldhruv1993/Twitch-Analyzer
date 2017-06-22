@@ -7,6 +7,12 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "Launch TwitchCronScript",
+            "program": "${workspaceRoot}/TwitchCronScript.js"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "Launch Program",
             "program": "${workspaceRoot}/bin/www",
             "cwd": "${workspaceRoot}"

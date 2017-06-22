@@ -1,2 +1,13 @@
+*******************************************************************
+                    FIXES AND ERRORS
+*******************************************************************
+- In TwitchCronScript the getPopularClips function is making the callback to addClipsToDB before getting all 
+ clips and maybe that is why addClipsToDB function is having some issues with adding clips to mongodb. Fix it
+  by collecting all the clips data first and then calling addClipsToDB function at the end.
+
+
+*******************************************************************
+                    FUTURE FEATURES
+*******************************************************************
 - Add code to SpikeDetection to get the spikes. Also make it so that the cron runs every couple of seconds.
     Also make sure to show "SPIKE" or something on console when a spike occurs within last 5 seconds.

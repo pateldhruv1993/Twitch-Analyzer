@@ -1,4 +1,3 @@
-
 var MongoClient = require('mongodb').MongoClient;
 
 var _db;
@@ -22,13 +21,13 @@ module.exports = {
 
   insertData: function (data, collectionName) {
     var collection;
-    if(collectionName == "chat_logs"){
+    if (collectionName == "chat_logs") {
       collection = _chat_logs_coll;
-    } else if(collectionName == "stream_logs"){
+    } else if (collectionName == "stream_logs") {
       collection = _stream_logs_coll;
-    } else if(collectionName == "viewer_logs"){
+    } else if (collectionName == "viewer_logs") {
       collection = _viewer_logs_coll;
-    } else if(collectionName == "clip_logs"){
+    } else if (collectionName == "clip_logs") {
       collection = _clip_logs_coll;
     }
 

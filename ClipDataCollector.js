@@ -1,10 +1,8 @@
 var request = require("request");
 var DBManager = require("./DatabaseManager");
+var config = require("./config");
 
-// Connection URL. This is where your mongodb server is running.
-var dburl = "mongodb://localhost:27017/local";
-
-DBManager.connectToServer(dburl, function (err) {
+DBManager.connectToServer(config.dburl, function (err) {
     if (!err) {
         db = DBManager.getDb();
         getPopularClips("moonmoon_ow", "week", 100, null,function (data) {
@@ -29,7 +27,7 @@ function getPopularClips(streamName, timeFrame, limit, cursor, callback) {
     request({
         headers: {
             'Accept': 'application/vnd.twitchtv.v5+json',
-            'Client-ID': 'dcjnqfita9g9qzn55h1y2wnoanbzi8f'
+            'Client-ID': config.twitch.clientId
         },
         uri: uri,
         method: 'GET'
