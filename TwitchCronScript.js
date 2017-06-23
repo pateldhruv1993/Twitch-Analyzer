@@ -199,6 +199,7 @@ function clipsDataCron() {
                 Array.prototype.push.apply(accumulatedClips, data.clips);
                 if (done !== undefined && done) {
                     addClipsToDB(accumulatedClips);
+                    accumulatedClips = [];
                 }
             } else {
                 console.log("ERROR: clips is undefined");
@@ -206,6 +207,9 @@ function clipsDataCron() {
             }
         });
     });
+
+    
+    setTimeout(clipsDataCron, 6000);
 }
 
 
@@ -231,7 +235,7 @@ function getPopularClips(streamName, timeFrame, limit, cursor, callback) {
                 //console.log("================================================= Another pass on clips API. Clip Cursor: " + body._cursor + ", Cursor length: " + body._cursor.length + " =========================")
                 getPopularClips(streamName, timeFrame, limit, body._cursor, callback);
             } else {
-                console.log("End of multi-page clips API call.");
+                //console.log("End of multi-page clips API call.");
                 callback(body, true);
             }
         } else {
@@ -243,102 +247,123 @@ function getPopularClips(streamName, timeFrame, limit, cursor, callback) {
 
 
 function addClipsToDB(clips) {
-    clipLogs = [];
+    var clipLogs = [];
+    var clipsLength = clips.length;
+    var clipsItr = 0;
     //clips.forEach(function (clip) {
-    for (var i = 0; i < clips.length; i++) {
-        var clip = clips[i];
-        var streamName = clip.broadcaster.name;
-        var unixTimeSec = Math.floor((new Date(clip.created_at) / 1000));
+    /*for (let i = 0; i < clips.length; ++i) {
+        var streamName = clips[i].broadcaster.name;
+        var unixTimeSec = Math.floor((new Date(clips[i].created_at) / 1000));
 
         db.collection("clip_logs").find({
-            'clip_slug': clip.slug
+            'clip_slug': clips[i].slug
         }).count(function (error, numOfDocs) {
             if (numOfDocs == 0) { // Clips doesnt exist in DB so make a new entry/document for this clip
-                if (clip.vod != null) {
+                if (clips[i].vod != null) {
                     var clipLog = {
                         unixTimeSec: unixTimeSec,
                         stream: streamName,
-                        views: clip.views,
-                        duration: clip.duration,
-                        created_at: clip.created_at,
-                        vod_url: clip.vod.url,
-                        vod_id: clip.vod.id,
-                        clip_slug: clip.slug
+                        views: clips[i].views,
+                        duration: clips[i].duration,
+                        created_at: clips[i].created_at,
+                        vod_url: clips[i].vod.url,
+                        vod_id: clips[i].vod.id,
+                        clip_slug: clips[i].slug
                     };
 
-                    var timestampInSecs = clip.vod.url.substring(clip.vod.url.indexOf("?t=") + 3);
+                    var timestampInSecs = clips[i].vod.url.substring(clips[i].vod.url.indexOf("?t=") + 3);
                     clipLog.timeDelaySecs = convertTimeStampToSeconds(timestampInSecs);
 
                     clipLogs.push(clipLog);
-
+                    clipsItr++;
+                    if (clipsLength == clipsItr) {
+                        db.collection("clip_logs").insertMany(clipLogs);
+                        console.log(clipLogs.length + " clips added to the DB")
+                    }
                 } else {
                     console.log("Vod Deleted so not adding the clip to database");
                 }
             } else { // Clip already exists in database just need to update data on it
-                db.collection("clip_logs").updateOne({clip_slug: clip.slug}, {$set: {views: clip.views}});
-            }
-                console.log(i);
-
-        }.bind({itr: i}));
-
-
-
-    }
-/*
-    async.each(
-        clips,
-        function (clip, callback) {
-            var streamName = clip.broadcaster.name;
-            var unixTimeSec = Math.floor((new Date(clip.created_at) / 1000));
-
-            db.collection("clip_logs").find({
-                'clip_slug': clip.slug
-            }).count(function (error, numOfDocs) {
-                if (numOfDocs == 0) { // Clips doesnt exist in DB so make a new entry/document for this clip
-                    if (clip.vod != null) {
-                        var clipLog = {
-                            unixTimeSec: unixTimeSec,
-                            stream: streamName,
-                            views: clip.views,
-                            duration: clip.duration,
-                            created_at: clip.created_at,
-                            vod_url: clip.vod.url,
-                            vod_id: clip.vod.id,
-                            clip_slug: clip.slug
-                        };
-
-                        var timestampInSecs = clip.vod.url.substring(clip.vod.url.indexOf("?t=") + 3);
-                        clipLog.timeDelaySecs = convertTimeStampToSeconds(timestampInSecs);
-
-                        clipLogs.push(clipLog);
-
-                    } else {
-                        console.log("Vod Deleted so not adding the clip to database");
+                clipsLength--;
+                db.collection("clip_logs").updateOne({
+                    clip_slug: clips[i].slug
+                }, {
+                    $set: {
+                        views: clips[i].views
                     }
-                } else { // Clip already exists in database just need to update data on it
-                    db.collection("clip_logs").updateOne({
-                        clip_slug: clip.slug
-                    }, {
-                        $set: {
-                            views: clip.views
-                        }
-                    });
-                }
-            });
-            callback();
-        },
-        function (err) {
+                });
+                console.log("Clip alreay exists");
+            }
+        });
+    }*/
+
+    async.map(
+        clips, processClips,
+        function (err, results) {
             if (err) {
                 console.log("Something went wrong while batching clips data." + err.message);
             } else {
                 // Everything went well. Add all the clipLogs to DB
-                console.log(clipLogs.length + " <= Size of clipsLog that is why not adding anything to DB")
-                db.collection("clip_logs").insertMany(clipLogs);
+                results = results.filter(function(result){
+                    return result != null;
+                });
+                if(results.length != 0){
+                    console.log(results.length + " clips added to DB.");
+                    db.collection("clip_logs").insertMany(results);
+                }
             }
         }
     );
-*/
+
 }
+
+
+
+
+function processClips(clip, callback) {
+    var streamName = clip.broadcaster.name;
+    var unixTimeSec = Math.floor((new Date(clip.created_at) / 1000));
+
+    db.collection("clip_logs").find({
+        'clip_slug': clip.slug
+    }).count(function (error, numOfDocs) {
+        if (numOfDocs == 0) { // Clips doesnt exist in DB so make a new entry/document for this clip
+            if (clip.vod != null) {
+                var clipLog = {
+                    unixTimeSec: unixTimeSec,
+                    stream: streamName,
+                    views: clip.views,
+                    duration: clip.duration,
+                    created_at: clip.created_at,
+                    vod_url: clip.vod.url,
+                    vod_id: clip.vod.id,
+                    clip_slug: clip.slug
+                };
+
+                var timestampInSecs = clip.vod.url.substring(clip.vod.url.indexOf("?t=") + 3);
+                clipLog.timeDelaySecs = convertTimeStampToSeconds(timestampInSecs);
+
+                //clipLogs.push(clipLog);
+                
+                callback(null, clipLog);
+
+            } else {
+                //console.log("Vod Deleted so not adding the clip to database");
+                callback(null, null);
+            }
+        } else { // Clip already exists in database just need to update data on it
+            db.collection("clip_logs").updateOne({
+                clip_slug: clip.slug
+            }, {
+                $set: {
+                    views: clip.views
+                }
+            });
+            callback(null, null);
+        }
+    });
+}
+
 
 
 
