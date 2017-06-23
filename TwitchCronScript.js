@@ -5,7 +5,6 @@ var tmi = require("tmi.js");
 var config = require('./config');
 
 var db;
-var clipLogs = [];
 
 var ircOptions = {
     options: {
@@ -209,7 +208,7 @@ function clipsDataCron() {
     });
 
     
-    setTimeout(clipsDataCron, 6000);
+    setTimeout(clipsDataCron, 600000);
 }
 
 

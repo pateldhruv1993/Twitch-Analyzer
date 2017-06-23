@@ -26,7 +26,7 @@ function getChatGraphData(stream, maxDocs, latestLogTime, res) {
     var data = { chatCounts: [], time: [], movingAvgPoints: [], movingAvgTime: [] }
     var movingAvgPriod = 5;
     chatCondenseBlockSize = 5; //in seconds
-    getStartOfStream(stream, function getStartOfStreamCallback(startOfLastStream) {
+    getStartOfStreamAndVodId(stream, function getStartOfStreamCallback(startOfLastStream) {
         startOfLastStream = Number(startOfLastStream);
         var cursor = db.collection("chat_logs").find({ "stream": stream, "unixTimeSec": { $gt: startOfLastStream } });
         cursor.count(function callbackAfterCount(error, numOfDocs) {
@@ -164,7 +164,7 @@ function unixTimeSecToTime(unixTimeSec) {
     if (minutes < 10) { minutes = "0" + minutes }
     // Seconds part from the timestamp
     var seconds = date.getSeconds();
-    if (seconds < 10) { seconds = "0" + seconds }
+    if (seconds < 10) { seconds = "0" + seconds } 
 
     return (hours + ":" + minutes + ":" + seconds);
 }
@@ -180,7 +180,7 @@ function getStartOfStreamAndVodId(stream, callback) {
             startTime = item.unixTimeSec;
             vodId = item.vod_id;
         }
-        callback(valueToReturn, vodId);
+        callback(startTime, vodId);
         return false;
     });
 }

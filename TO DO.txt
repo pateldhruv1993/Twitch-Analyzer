@@ -1,9 +1,7 @@
 *******************************************************************
                     FIXES AND ERRORS
 *******************************************************************
-- In TwitchCronScript the getPopularClips function is making the callback to addClipsToDB before getting all 
- clips and maybe that is why addClipsToDB function is having some issues with adding clips to mongodb. Fix it
-  by collecting all the clips data first and then calling addClipsToDB function at the end.
+
 
 
 *******************************************************************
