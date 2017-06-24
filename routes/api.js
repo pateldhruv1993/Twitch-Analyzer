@@ -23,70 +23,66 @@ router.get('/', function (req, res, next) {
 
 
 function getChatGraphData(stream, maxDocs, latestLogTime, res) {
-    var data = { chatCounts: [], time: [], movingAvgPoints: [], movingAvgTime: [] }
-    var movingAvgPriod = 5;
+    var data = {
+        chatCounts: [],
+        time: [],
+        movingAvgPoints: [],
+        movingAvgTime: []
+    };
     chatCondenseBlockSize = 5; //in seconds
     getStartOfStreamAndVodId(stream, function getStartOfStreamCallback(startOfLastStream) {
         startOfLastStream = Number(startOfLastStream);
-        var cursor = db.collection("chat_logs").find({ "stream": stream, "unixTimeSec": { $gt: startOfLastStream } });
+        var cursor = db.collection("chat_logs").find({"stream": stream,"unixTimeSec": {$gt: startOfLastStream}}).sort({unixTimeSec: -1});
+        //var cursor = db.collection("chat_logs").find({ "stream": stream, "unixTimeSec": { $gt: startOfLastStream } });
         cursor.count(function callbackAfterCount(error, numOfDocs) {
-            /*var numOfDocsToSkip = (numOfDocs + 1) - maxDocs;
-            if (numOfDocs < maxDocs) {
-                numOfDocsToSkip = 0;
-            }
-            var counter = 0;
-            */
-            var startTime = 0;
             var chatCounter = 0;
+            var condenseGate = 0;
+            var dataReturned = false;
             cursor.each(function cursorLoopCallback(err, item) {
-                if (item == null) {
-                    var skip = Math.max(data.time.length - maxDocs, 1);
-                    data.time = data.time.slice(skip);
-                    data.chatCounts = data.chatCounts.splice(skip);
+                if(dataReturned){
+                    //Pointless returns to exhaust cursor coz I couldn't find any freaking way to break this loop!
+                    return false;
+                }
+                if (item == null || data.time.length >= maxDocs) {
+                    //data.chatCounts.reverse();
+                    //data.time.reverse();
+                    data.time = reverseArray(data.time);
+                    data.chatCounts = reverseArray(data.chatCounts);
                     res.json(data);
-                    return;
+                    dataReturned = true;
+                    return false;
                 }
 
-                var record = {};
-
-                if (startTime == 0) {
-                    startTime = item.unixTimeSec + chatCondenseBlockSize;
+                if (condenseGate == 0) {
+                    data.latestLogTime = item.unixTimeSec;
+                    condenseGate = item.unixTimeSec - chatCondenseBlockSize;
                 }
 
-                data.latestLogTime = startTime;
-                if (item.unixTimeSec < startTime) {
+                if (item.unixTimeSec > condenseGate) {
                     chatCounter++;
                 } else {
                     data.chatCounts.push(chatCounter);
-                    data.time.push(unixTimeSecToTime(startTime));
+                    data.time.push(unixTimeSecToTime(condenseGate));
                     chatCounter = 0;
-                    var tempCounter = 0
+                    var tempCounter = 0;
                     while (true) {
                         if (tempCounter > 100000) {
-                            console.log("Awww shit! May be an infinite loop in api.js");
+                            console.log("Probably hit an infinite loop so breaking it.");
                             break;
                         }
-                        startTime = startTime + chatCondenseBlockSize;
-                        if (item.unixTimeSec < startTime) {
-                            chatCounter = 1;
+
+                        condenseGate = condenseGate - chatCondenseBlockSize;
+                        if (item.unixTimeSec > condenseGate) {
+                            chatCounter++;
                             break;
                         } else {
                             data.chatCounts.push(0);
-                            data.time.push(unixTimeSecToTime(startTime));
+                            data.time.push(unixTimeSecToTime(condenseGate));
                         }
+
                         tempCounter++;
                     }
                 }
-                /*counter++;
-                var date;
-                if (counter < numOfDocsToSkip) {
-                    return;
-                }
-                */
-
-
-                //data.time.push(unixTimeSecToTime(item.unixTimeSec));
-                //data.viewerCount.push(item.viewerCount);
             });
         });
     });
@@ -95,12 +91,28 @@ function getChatGraphData(stream, maxDocs, latestLogTime, res) {
 
 
 function getViewersGraphData(stream, maxDocs, latestLogTime, res) {
-    var data = { viewerCount: [], time: [], movingAvgPoints: [], movingAvgTime: [], movingAvgPoints10: [], movingAvgTime10: [], movingAvgPoints20: [], movingAvgTime20: [] };
+    var data = {
+        viewerCount: [],
+        time: [],
+        movingAvgPoints: [],
+        movingAvgTime: [],
+        movingAvgPoints10: [],
+        movingAvgTime10: [],
+        movingAvgPoints20: [],
+        movingAvgTime20: []
+    };
     var movingAvgPeriod = 5;
 
     getStartOfStreamAndVodId(stream, function getStartOfStreamCallback(startOfLastStream, vodId) {
         startOfLastStream = Number(startOfLastStream);
-        var cursor = db.collection("viewer_logs").find({ 'stream': stream, "unixTimeSec": { $gt: startOfLastStream } }).sort({ unixTimeSec: 1 });
+        var cursor = db.collection("viewer_logs").find({
+            'stream': stream,
+            "unixTimeSec": {
+                $gt: startOfLastStream
+            }
+        }).sort({
+            unixTimeSec: 1
+        });
         cursor.count(function (error, numOfDocs) {
 
             var numOfDocsToSkip = (numOfDocs + 1) - maxDocs;
@@ -158,22 +170,46 @@ function unixTimeSecToTime(unixTimeSec) {
     var date = new Date(unixTimeSec * 1000);
     // Hours part from the timestamp
     var hours = date.getHours();
-    if (hours < 10) { hours = "0" + hours }
+    if (hours < 10) {
+        hours = "0" + hours
+    }
     // Minutes part from the timestamp
     var minutes = date.getMinutes();
-    if (minutes < 10) { minutes = "0" + minutes }
+    if (minutes < 10) {
+        minutes = "0" + minutes
+    }
     // Seconds part from the timestamp
     var seconds = date.getSeconds();
-    if (seconds < 10) { seconds = "0" + seconds } 
+    if (seconds < 10) {
+        seconds = "0" + seconds
+    }
 
     return (hours + ":" + minutes + ":" + seconds);
 }
 
 
+function reverseArray(array) {
+    var left = null;
+    var right = null;
+    var length = array.length;
+    for (left = 0; left < length / 2; left += 1) {
+        right = length - 1 - left;
+        var temporary = array[left];
+        array[left] = array[right];
+        array[right] = temporary;
+    }
+    return array;
+}
+
 
 function getStartOfStreamAndVodId(stream, callback) {
 
-    db.collection("stream_logs").find({ 'stream': stream, 'status': 'start' }).sort({ unixTimeSec: -1 }).each(function (err, item) {
+    db.collection("stream_logs").find({
+        'stream': stream,
+        'status': 'start'
+    }).sort({
+        unixTimeSec: -1
+    }).each(function (err, item) {
         var startTime = 0;
         var vodId = "";
         if (item != null) {
