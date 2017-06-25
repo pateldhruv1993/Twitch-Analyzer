@@ -1,5 +1,6 @@
 var express = require('express');
 var gauss = require('gauss');
+var async = require("async");
 var router = express.Router();
 var DBManager = require("../DatabaseManager");
 
