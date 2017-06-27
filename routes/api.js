@@ -15,82 +15,174 @@ router.get('/', function (req, res, next) {
     var latestLogTime = req.query.latestLogTime;
     var startTime = req.query.start;
     var endTime = req.query.start;
+    var maxDocs = 200;
+
+    var data = {
+        viewerCounts: [],
+        chatCounts: [],
+        time: [],
+        reversedViewerCounts: [],
+        reversedChatCounts: [],
+        reversedTime: [],
+        movingAvgPoints: [],
+        movingAvgTime: [],
+        movingAvgPoints10: [],
+        movingAvgTime10: [],
+        movingAvgPoints20: [],
+        movingAvgTime20: []
+    };
+
+
     if (func == "viewerGraph") {
-        getViewersGraphData(stream, 200, latestLogTime, res);
+
+        async.waterfall([function (callback) {
+                getStartOfStreamAndVodId(stream, function (startOfLastStream, vodId) {
+                    callback(null, stream, maxDocs, latestLogTime, startOfLastStream, vodId);
+                });
+            }, getViewersGraphData],
+            function finalCallback(err, reversedTime, reversedViewerCounts, newLatestLogTime) {
+                if (err) {
+                    res.write("Error while getting viewers graph data.");
+                    console.log("ERROR: While sending viewer graph data. MSG:" + err);
+                } else {
+                    data.time = reverseArray(reversedTime);
+                    data.viewerCounts = reverseArray(reversedViewerCounts);
+                    data.latestLogTime = newLatestLogTime;
+                    res.json(data);
+                }
+            }
+        );
+        //getViewersGraphData(stream, 200, latestLogTime, res);
     } else if (func == "chatGraph") {
-        getChatGraphData(stream, 200, latestLogTime, res);
+        async.waterfall([function (callback) {
+                getStartOfStreamAndVodId(stream, function (startOfLastStream, vodId) {
+                    callback(null, startOfLastStream, vodId, stream, maxDocs, latestLogTime);
+                });
+            }, getChatGraphData],
+            function finalCallback(err, reversedTime, reversedChatCounts, newLatestLogTime) {
+                if (err) {
+                    res.write("Error while getting chat graph data.");
+                    console.log("ERROR: While sending chat graph data. MSG:" + err);
+                } else {
+                    data.time = reverseArray(reversedTime);
+                    data.chatCounts = reverseArray(reversedChatCounts);
+                    data.latestLogTime = newLatestLogTime;
+                    res.json(data);
+                }
+            });
+        //getChatGraphData(stream, 200, latestLogTime, res);
+    } else if (func == "viewerChatGraph") {
+
+    } else if (func == "viewerChatSpikeGraph") {
+
     }
 });
 
 
-function getChatGraphData(stream, maxDocs, latestLogTime, res) {
-    var data = {
-        chatCounts: [],
-        time: [],
-        movingAvgPoints: [],
-        movingAvgTime: []
-    };
-    chatCondenseBlockSize = 5; //in seconds
-    getStartOfStreamAndVodId(stream, function getStartOfStreamCallback(startOfLastStream) {
-        startOfLastStream = Number(startOfLastStream);
-        var cursor = db.collection("chat_logs").find({"stream": stream,"unixTimeSec": {$gt: startOfLastStream}}).sort({unixTimeSec: -1});
-        //var cursor = db.collection("chat_logs").find({ "stream": stream, "unixTimeSec": { $gt: startOfLastStream } });
-        cursor.count(function callbackAfterCount(error, numOfDocs) {
-            var chatCounter = 0;
-            var condenseGate = 0;
-            var dataReturned = false;
-            cursor.each(function cursorLoopCallback(err, item) {
-                if(dataReturned){
-                    //Pointless returns to exhaust cursor coz I couldn't find any freaking way to break this loop!
-                    return false;
-                }
-                if (item == null || data.time.length >= maxDocs) {
-                    //data.chatCounts.reverse();
-                    //data.time.reverse();
-                    data.time = reverseArray(data.time);
-                    data.chatCounts = reverseArray(data.chatCounts);
-                    res.json(data);
-                    dataReturned = true;
-                    return false;
+
+function getChatGraphData(startOfLastStream, vodId, stream, maxDocs, latestLogTime, callback) {
+    var reversedTime = [];
+    var reversedChatCounts = [];
+    var chatCondenseBlockSize = 5; //in seconds
+    var chatCounter = 0;
+    var condenseGate = 0;
+    var dataReturned = false;
+    var newLatestLogTime;
+
+    var cursor = db.collection("chat_logs").find({
+        "stream": stream,
+        "unixTimeSec": {
+            $gt: startOfLastStream
+        }
+    }).sort({
+        unixTimeSec: -1
+    });
+
+    cursor.each(function cursorLoopCallback(err, item) {
+        if (dataReturned) {
+            //Pointless returns to exhaust cursor coz I couldn't find any freaking way to break this loop!
+            return false;
+        }
+        if (item == null || reversedTime.length >= maxDocs) {
+            //data.chatCounts.reverse();
+            //data.time.reverse();
+            callback(null, reversedTime, reversedChatCounts, newLatestLogTime);
+            dataReturned = true;
+            return false;
+        }
+
+        if (condenseGate == 0) {
+            condenseGate = item.unixTimeSec - chatCondenseBlockSize;
+        }
+
+
+
+        if (item.unixTimeSec > condenseGate) {
+            chatCounter++;
+        } else {
+            newLatestLogTime = condenseGate;
+            reversedChatCounts.push(chatCounter);
+            reversedTime.push(unixTimeSecToTime(condenseGate));
+            chatCounter = 0;
+            var tempCounter = 0;
+            while (true) {
+                if (tempCounter > 100000) {
+                    console.log("Probably hit an infinite loop so breaking it.");
+                    break;
                 }
 
-                if (condenseGate == 0) {
-                    data.latestLogTime = item.unixTimeSec;
-                    condenseGate = item.unixTimeSec - chatCondenseBlockSize;
-                }
-
+                condenseGate = condenseGate - chatCondenseBlockSize;
                 if (item.unixTimeSec > condenseGate) {
                     chatCounter++;
+                    break;
                 } else {
-                    data.chatCounts.push(chatCounter);
-                    data.time.push(unixTimeSecToTime(condenseGate));
-                    chatCounter = 0;
-                    var tempCounter = 0;
-                    while (true) {
-                        if (tempCounter > 100000) {
-                            console.log("Probably hit an infinite loop so breaking it.");
-                            break;
-                        }
-
-                        condenseGate = condenseGate - chatCondenseBlockSize;
-                        if (item.unixTimeSec > condenseGate) {
-                            chatCounter++;
-                            break;
-                        } else {
-                            data.chatCounts.push(0);
-                            data.time.push(unixTimeSecToTime(condenseGate));
-                        }
-
-                        tempCounter++;
+                    if (reversedTime.length >= maxDocs) {
+                        //data.chatCounts.reverse();
+                        //data.time.reverse();
+                        callback(null, reversedTime, reversedChatCounts, newLatestLogTime);
+                        dataReturned = true;
+                        return false;
                     }
+                    newLatestLogTime = condenseGate;
+                    reversedChatCounts.push(0);
+                    reversedTime.push(unixTimeSecToTime(condenseGate));
                 }
-            });
-        });
+                tempCounter++;
+            }
+        }
     });
+
 }
 
+function getViewersGraphData(stream, maxDocs, latestLogTime, startOfLastStream, vodId, callback) {
+    var reversedTime = [];
+    var reversedViewerCounts = [];
+    var newLatestLogTime;
+    var cursor = db.collection("viewer_logs").find({
+        'stream': stream,
+        "unixTimeSec": {
+            $gt: startOfLastStream
+        }
+    }).sort({
+        unixTimeSec: -1
+    }).limit(Number(maxDocs));
+    cursor.each(function (err, item) {
+        if (err) {
+            console.log("ERROR in getViewersGraphData" + err);
+            callback(err);
+            return;
+        }
+        if (item == null) {
+            callback(null, reversedTime, reversedViewerCounts, newLatestLogTime);
+            return;
+        }
 
-
+        newLatestLogTime = item.unixTimeSec;
+        reversedTime.push(unixTimeSecToTime(item.unixTimeSec));
+        reversedViewerCounts.push(item.viewerCount);
+    });
+}
+/* Commenting out older getViewerGraphData just in case want to use the SMA stuff.
 function getViewersGraphData(stream, maxDocs, latestLogTime, res) {
     var data = {
         viewerCount: [],
@@ -105,7 +197,6 @@ function getViewersGraphData(stream, maxDocs, latestLogTime, res) {
     var movingAvgPeriod = 5;
 
     getStartOfStreamAndVodId(stream, function getStartOfStreamCallback(startOfLastStream, vodId) {
-        startOfLastStream = Number(startOfLastStream);
         var cursor = db.collection("viewer_logs").find({
             'stream': stream,
             "unixTimeSec": {
@@ -165,7 +256,7 @@ function getViewersGraphData(stream, maxDocs, latestLogTime, res) {
         });
     });
 }
-
+*/
 
 function unixTimeSecToTime(unixTimeSec) {
     var date = new Date(unixTimeSec * 1000);
@@ -210,14 +301,15 @@ function getStartOfStreamAndVodId(stream, callback) {
         'status': 'start'
     }).sort({
         unixTimeSec: -1
-    }).each(function (err, item) {
+    }).limit(1).each(function (err, item) {
         var startTime = 0;
         var vodId = "";
         if (item != null) {
             startTime = item.unixTimeSec;
             vodId = item.vod_id;
+            callback(startTime, vodId);
         }
-        callback(startTime, vodId);
+
         return false;
     });
 }

@@ -30,7 +30,7 @@ var selectorOptions = {
     }],*/
 };
 
-var streamName = "curse";
+var streamName = "lirik";
 
 $(document).ready(function () {
     $(".streamDropDown").click(function(event){
@@ -80,9 +80,10 @@ function replotViewerGraphWithNewData() {
         var plotData = [{
             mode: 'lines',
             x: data.time,
-            y: data.viewerCount,
+            y: data.viewerCounts,
             name: "Viewers"
-        }, {
+        }/*COMMENTING OUT COZ NO MOVINGAVG DATA IS BEING SENT
+        , {
             x: data.movingAvgTime,
             y: data.movingAvgPoints,
             mode: 'lines',
@@ -106,16 +107,18 @@ function replotViewerGraphWithNewData() {
                 color: 'rgb(255, 0, 0)',
             },
             name: "MAVG 100"
-        }];
+        }*/];
 
         viewerGraph.data[0].x = data.time;
-        viewerGraph.data[0].y = data.viewerCount;
+        viewerGraph.data[0].y = data.viewerCounts;
+        
+        /*COMMENTING OUT COZ NO MOVINGAVG DATA IS BEING SENT
         viewerGraph.data[1].x = data.movingAvgTime;
         viewerGraph.data[1].y = data.movingAvgPoints;
         viewerGraph.data[2].x = data.movingAvgTime10;
         viewerGraph.data[2].y = data.movingAvgPoints10;
         viewerGraph.data[3].x = data.movingAvgTime20;
-        viewerGraph.data[3].y = data.movingAvgPoints20;
+        viewerGraph.data[3].y = data.movingAvgPoints20;*/
 
         latestLogTimeViewerGraph = data.latestLogTime;
 
@@ -178,9 +181,10 @@ function createViewersGraph(data) {
     var plotData = [{
         mode: 'lines',
         x: data.time,
-        y: data.viewerCount,
+        y: data.viewerCounts,
         name: "Viewers"
-    }, {
+    }/* COMMENTING OUT COZ NO MOVINGAVG DATA IS BEING SENT
+    , {
         x: data.movingAvgTime,
         y: data.movingAvgPoints,
         mode: 'lines',
@@ -204,9 +208,9 @@ function createViewersGraph(data) {
             color: 'rgb(255, 0, 0)'
         },
         name: "MAVG 100"
-    }];
+    }*/];
 
-    var xRangeOption2 = data.viewerCount.length;
+    var xRangeOption2 = data.viewerCounts.length;
     var xRangeOption1 = xRangeOption2 - 1000;
     if (xRangeOption1 < 0) {
         xRangeOption1 = 0;
