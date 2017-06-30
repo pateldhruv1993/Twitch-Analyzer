@@ -98,37 +98,10 @@ function getChatGraphData(startOfLastStream, vodId, stream, maxDocs, latestLogTi
         unixTimeSec: -1
     });
     
-    cursor.each(function cursorLoopCallback(err, item){
-        if(dataReturned){
-            return false;
-        }
-
-        if (item == null /*|| reversedTime.length >= (maxDocs + 1)*/) {
-            //data.chatCounts.reverse();
-            //data.time.reverse();
-            callback(null, reversedTime, reversedChatCounts, newLatestLogTime);
-            dataReturned = true;
-            return false;
-        }
-
-        var arrPosition = Math.floor((item.unixTimeSec - startOfLastStream) / chatCondenseBlockSize);
-        if(reversedChatCounts[arrPosition] === undefined){
-            //reversedChatCounts.splice(arrPosition, 0, 1);
-            reversedChatCounts[arrPosition] = 1;
-        } else{
-            reversedChatCounts.splice(arrPosition, 1, (reversedChatCounts[arrPosition] + 1));
-            //reversedChatCounts[arrPosition] = reversedChatCounts[arrPosition] + 1;
-        }
-
-        if(reversedTime[arrPosition] == undefined){
-            reversedTime[arrPosition] = unixTimeSecToTime(startOfLastStream + (arrPosition * chatCondenseBlockSize));
-        }
-
-    });
     
     
     
-    /*
+    
     cursor.each(function cursorLoopCallback(err, item) {
         if (dataReturned) {
             //Pointless returns to exhaust cursor coz I couldn't find any freaking way to break this loop!
@@ -181,7 +154,7 @@ function getChatGraphData(startOfLastStream, vodId, stream, maxDocs, latestLogTi
                 tempCounter++;
             }
         }
-    });*/
+    });
 
 }
 
