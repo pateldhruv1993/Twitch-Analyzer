@@ -2,8 +2,7 @@
                     FIXES AND ERRORS
 *******************************************************************
 
-- Seems like the cursor is closing itself unexpectadly in "" so use cursor.noCursorTimeout() to stop it from 
-closing. Make sure to close the cursor.https://stackoverflow.com/questions/28275628/where-to-specify-nocursortimeout-option-using-nodejs-mongodb-driver
+- Try to get the twitch-analyzer on Heroku to work again
 
 *******************************************************************
                     FUTURE FEATURES
