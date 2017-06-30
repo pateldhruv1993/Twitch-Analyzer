@@ -23,8 +23,6 @@ var onlineStreamers = [];
 
 var ircClient = new tmi.client(ircOptions);
 
-TwitchCronScript();
-
 
 
 function TwitchCronScript() {
@@ -387,3 +385,7 @@ function convertTimeStampToSeconds(timestamp) {
 
     return ((parseInt(h) * 60 * 60) + (parseInt(m) * 60) + parseInt(s));
 }
+
+module.exports = {
+    TwitchCronScript : TwitchCronScript
+};

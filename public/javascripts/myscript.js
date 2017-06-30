@@ -30,7 +30,7 @@ var selectorOptions = {
     }],*/
 };
 
-var streamName = "lirik";
+var streamName = "curse";
 
 $(document).ready(function () {
     $(".streamDropDown").click(function(event){

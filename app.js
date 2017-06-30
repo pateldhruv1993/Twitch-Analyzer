@@ -11,7 +11,7 @@ var config = require('./config');
 
 
 var DBManager = require("./DatabaseManager");
-
+var TwitchCronScript = require("./TwitchCronScript");
 
 var db;
 
@@ -25,9 +25,7 @@ var app = express();
 DBManager.connectToServer(config.dbUrl, function (err) {
   if (!err) {
     db = DBManager.getDb();
-
-
-
+    //twitchCron = TwitchCronScript.TwitchCronScript();
     
     // view engine setup
     app.set('views', path.join(__dirname, 'views'));
