@@ -1,5 +1,34 @@
 var _ = require("./utils");
 
+// Enable followers-only mode on a channel..
+function followersonly(channel, minutes) {
+    channel = _.channel(channel);
+    minutes = _.get(minutes, 30);
+
+    // Send the command to the server and race the Promise against a delay..
+    return this._sendCommand(this._getPromiseDelay(), channel, `/followers ${minutes}`, (resolve, reject) => {
+        // Received _promiseFollowers event, resolve or reject..
+        this.once("_promiseFollowers", (err) => {
+            if (!err) { resolve([channel, ~~minutes]); }
+            else { reject(err); }
+        });
+    });
+}
+
+// Disable followers-only mode on a channel..
+function followersonlyoff(channel) {
+    channel = _.channel(channel);
+
+    // Send the command to the server and race the Promise against a delay..
+    return this._sendCommand(this._getPromiseDelay(), channel, "/followersoff", (resolve, reject) => {
+        // Received _promiseFollowersoff event, resolve or reject..
+        this.once("_promiseFollowersoff", (err) => {
+            if (!err) { resolve([channel]); }
+            else { reject(err); }
+        });
+    });
+}
+
 // Leave a channel..
 function part(channel) {
     channel = _.channel(channel);
@@ -120,7 +149,7 @@ module.exports = {
         newColor = _.get(newColor, channel);
 
         // Send the command to the server and race the Promise against a delay..
-        return this._sendCommand(this._getPromiseDelay(), "#jtv", `/color ${newColor}`, (resolve, reject) => {
+        return this._sendCommand(this._getPromiseDelay(), "#tmijs", `/color ${newColor}`, (resolve, reject) => {
             // Received _promiseColor event, resolve or reject..
             this.once("_promiseColor", (err) => {
                 if (!err) { resolve([newColor]); }
@@ -171,6 +200,18 @@ module.exports = {
             });
         });
     },
+
+    // Enable followers-only mode on a channel..
+    followersonly: followersonly,
+
+    // Alias for followersonly()..
+    followersmode: followersonly,
+
+    // Disable followers-only mode on a channel..
+    followersonlyoff: followersonlyoff,
+
+    // Alias for followersonlyoff()..
+    followersmodeoff: followersonlyoff,
 
     // Host a channel..
     host: function host(channel, target) {
@@ -428,7 +469,7 @@ module.exports = {
         }
 
         // Send the command to the server and race the Promise against a delay..
-        return this._sendCommand(this._getPromiseDelay(), "#jtv", `/w ${username} ${message}`, (resolve, reject) => {
+        return this._sendCommand(this._getPromiseDelay(), "#tmijs", `/w ${username} ${message}`, (resolve, reject) => {
             var from = _.channel(username),
                 userstate = _.merge({
                         "message-type": "whisper",
