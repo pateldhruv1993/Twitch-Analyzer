@@ -2,10 +2,10 @@ var request = require("request");
 var DBManager = require("./DatabaseManager");
 var config = require("./config");
 
-DBManager.connectToServer(config.dburl, function (err) {
+DBManager.connectToServer("mongodb://localhost:27017/local", function (err) {
     if (!err) {
         db = DBManager.getDb();
-        getPopularClips("moonmoon_ow", "week", 100, null,function (data) {
+        getPopularClips("moonmoon_ow", "month", 100, null,function (data) {
             if (data.clips !== undefined) {
                 data.clips.forEach(function (clip) {
                     addClipToDB(clip);

@@ -2,7 +2,10 @@
                     FIXES AND ERRORS
 *******************************************************************
 
-- Try to get the twitch-analyzer on Heroku to work again
+- Heroku app is working. Check it out again when a stream is live to make sure its 
+ logging views and chat messages.
+
+- Implement viewers+chat+clips graph with data normalized.
 
 *******************************************************************
                     FUTURE FEATURES

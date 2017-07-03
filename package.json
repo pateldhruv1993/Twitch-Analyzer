@@ -35,5 +35,6 @@
   "bugs": {
     "url": "https://github.com/pateldhruv1993/Twitch-IRC-Analyzer/issues"
   },
-  "homepage": "https://github.com/pateldhruv1993/Twitch-IRC-Analyzer#readme"
+  "homepage": "https://github.com/pateldhruv1993/Twitch-IRC-Analyzer#readme",
+  "keywords": []
 }
