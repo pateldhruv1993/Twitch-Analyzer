@@ -37,8 +37,9 @@ function TwitchCronScript() {
             // Run the viewer data collection ron
             viewerCron();
 
-            // Run the clips data collection cron
-            clipsDataCron();
+            // Run the clips data collection cron for weekly and daily popular clips
+            clipsDataCron("week", 1200000);
+            clipsDataCron("day", 600000);
 
             // Event Listener for IRC connection issues
             ircClient.on("error", function (message) {
@@ -188,10 +189,10 @@ function checkIfStreamInLogs(streamName, unixTimeSec, status) {
 
 
 // Clips data collection cron
-function clipsDataCron() {
+function clipsDataCron(timeFrame, timeout) {
     var accumulatedClips = [];
     config.streamerList.forEach(function (streamerName) {
-        getPopularClips(streamerName, "week", 100, null, function (data, done) {
+        getPopularClips(streamerName, timeFrame, 100, null, function (data, done) {
             if (data.clips !== undefined) {
                 Array.prototype.push.apply(accumulatedClips, data.clips);
                 if (done !== undefined && done) {
@@ -206,7 +207,7 @@ function clipsDataCron() {
     });
 
     
-    setTimeout(clipsDataCron, 600000);
+    setTimeout(clipsDataCron, timeout);
 }
 
 

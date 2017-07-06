@@ -5,7 +5,8 @@
 - Heroku app is working. Check it out again when a stream is live to make sure its 
  logging views and chat messages.
 
-- Implement viewers+chat+clips graph with data normalized.
+- The logic to get normalizedClipViews is wrong. We should be iterating over clips in the outter
+ loop and unixTime in the inner loop
 
 *******************************************************************
                     FUTURE FEATURES
